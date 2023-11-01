@@ -1,5 +1,4 @@
-import { StatusBar } from "expo-status-bar";
-import React, { Fragment, useState } from "react";
+import React, {  useState } from "react";
 
 import {
   SafeAreaView,
@@ -9,6 +8,7 @@ import {
   Button,
   Pressable,
   Modal,
+  StatusBar
 } from "react-native";
 import Formulario from "./src/components/Formulario";
 
@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#F3F4F6",
     flex: 1,
+    marginTop:StatusBar.currentHeight
   },
   titulo: {
     textAlign: "center",
