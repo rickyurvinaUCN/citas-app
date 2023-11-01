@@ -1,5 +1,4 @@
-import React, {  useState } from "react";
-
+import React, { Fragment, useState, useEffect, createContext } from "react";
 import {
   SafeAreaView,
   Text,
@@ -8,101 +7,161 @@ import {
   Button,
   Pressable,
   Modal,
-  StatusBar
-} from "react-native";
-import Formulario from "./src/components/Formulario";
+  FlatList,
+  Alert,
+  StatusBar 
+} from 'react-native';
+
+import axios from 'axios';
+import Formulario from './src/components/Formulario';
+import Paciente from './src/components/Paciente';
+import InformacionPaciente from './src/components/InformacionPaciente';
+import {URL} from './src/helpers/index';
+const endpoint = URL;
+const UserContext = createContext();
 
 export default function App() {
-  //color hooks en la parte superior, no puede ser condicionaesl.
-  // const [cliente, setCiente]=useState({})//se aplica arrayDestructuring, multiplesStates, setCliente modifica el state en la app
-  // const [clientes, setCientes]=useState([])
+  const [modalVisible, setModalVisible] = useState(false);
+  const [pacientes, setPacientes] = useState([]);
+  const [paciente, setPaciente] = useState({});
+  const [modalPaciente, setModalPaciente] = useState(false);
 
-  const [modalVisible, setModalVisible] = useState(false); //modalVisible es solo de lectura
+  useEffect(() => {
+    getAllAppointments();
+    
+  }, []);
 
-  // setTimeout(()=>{
-  //   setModalVisible(true)
-  // })
-  // console.log(modalVisible)//consultar react native debugger o flipperk
+  const getAllAppointments = async () => {
+    
+    const response = await axios
+      .get(`${endpoint}appointment`)
+      .then(res => {
+        setPacientes(res.data);
+      })
+      .catch(error => console.log(error));
+  };
 
-  const nuevaCitaHandler = () => {
-    console.log("Diste click..");
+  const deleteAppointment = async id => {
+    await axios
+      .delete(`${endpoint}appointment/${id}`)
+      .then(res => {
+        getAllAppointments();
+      })
+      .catch(error => console.log(error));
+  };
+
+  const pacienteEditar = id => {
+    const pacienteEditar = pacientes.filter(paciente => paciente.id === id);
+    setPaciente(pacienteEditar[0]);
+  };
+
+  const pacienteEliminar = id => {
+    Alert.alert(
+      'Deseas Eliminar?',
+      'Un paciente eliminado no se puede recuperar',
+      [
+        { text: 'Cancelar' },
+        {
+          text: 'Si, Eliminar',
+          onPress: () => {
+            deleteAppointment(id);
+          },
+        },
+      ],
+    );
   };
 
   return (
-    // <Text>Hola mundo</Text>
-    //SafeAreaView es solo para android por la parte superiod
     <SafeAreaView style={styles.container}>
       <Text style={styles.titulo}>
-        Administrador de Citas{" "}
+        Administrador de Citas{' '}
         <Text style={styles.tituloBold}>Veterinaria</Text>
       </Text>
-      {/* <Button title='Boton Nuevo' onPress={console.log('Hola desde boton')}>
-      </Button> */}
-      {/* <Pressable onLongPress={funcionNueva}>
-        <Text>Boton Pressable</Text>
-      </Pressable> */}
-      {/* title es un prop */}
-      {/* Dentro de onPress se puede ejecutar javascript */}
-      {/* <Button title='Nueva Cita' onPress={console.log('Presionaste en el boton')}>
-    
-      </Button> */}
-      {/* Pressable soporta mas eventos  */}
-
-      {/* pressable hace que cualquier elemento se presione sobre el */}
-
-      {/* <Pressable onPress={()=>{console.log('presionaste el boton')}} onLongPress={()=>{console.log('Mantuviste presionado')}}>
-          <Text>Nueva Cita</Text>
-        </Pressable> */}
       <Pressable
         style={styles.btnNuevaCita}
-        onPress={() => setModalVisible(true)}
-      >
+        onPress={() => setModalVisible(!modalVisible)}>
         <Text style={styles.btnTextoNuevaCita}>Nueva Cita</Text>
       </Pressable>
 
-      <Formulario modalVisible={modalVisible} />
+      {pacientes.length === 0 ? (
+        <Text style={styles.noPacientes}> No hay pacientes</Text>
+      ) : (
+        <FlatList
+          style={styles.listado}
+          data={pacientes}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => {
+            return (
+              <Paciente
+                item={item}
+                setModalVisible={setModalVisible}
+                setPaciente={setPaciente}
+                pacienteEditar={pacienteEditar}
+                pacienteEliminar={pacienteEliminar}
+                setModalPaciente={setModalPaciente}
+              />
+            );
+          }}
+        />
+      )}
+
+      <Formulario
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        pacientes={pacientes}
+        setPacientes={setPacientes}
+        paciente={paciente}
+        setPaciente={setPaciente}
+        getAllAppointments={getAllAppointments}
+        pacienteAgregado={getAllAppointments}
+      />
+
+      <Modal visible={modalPaciente} animationType="fade">
+        <InformacionPaciente
+          paciente={paciente}
+          setPaciente={setPaciente}
+          setModalPaciente={setModalPaciente}
+        />
+      </Modal>
     </SafeAreaView>
-    // <View>
-    //   <Text>Hola mundo</Text>
-    // </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: '#F3F4F6',
     flex: 1,
     marginTop:StatusBar.currentHeight
   },
   titulo: {
-    textAlign: "center",
+    textAlign: 'center',
     fontSize: 30,
-    color: "#374151",
-    fontWeight: "600",
+    color: '#374151',
+    fontWeight: '600',
   },
   tituloBold: {
-    fontWeight: "900",
-    color: "#6D28D9",
+    fontWeight: '900',
+    color: '#6D28D9',
   },
   btnNuevaCita: {
-    backgroundColor: "#6D28D9",
+    backgroundColor: '#6D28D9',
     padding: 15,
     marginTop: 30,
     marginHorizontal: 20,
     borderRadius: 10,
   },
   btnTextoNuevaCita: {
-    textAlign: "center",
-    color: "#FFF",
+    textAlign: 'center',
+    color: '#FFF',
     fontSize: 18,
-    fontWeight: "900",
-    textTransform: "uppercase",
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   noPacientes: {
     marginTop: 40,
-    textAlign: "center",
+    textAlign: 'center',
     fontSize: 24,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   listado: {
     marginTop: 50,
